@@ -28,5 +28,4 @@ export const baseTheme = makeComponent({
 			<slot/>
 		</f-spacer>
 	`,
-	defaultProps: {}
 });

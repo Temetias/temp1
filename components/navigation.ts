@@ -29,6 +29,7 @@ export const navigation = makeComponent<NavigationProps>({
 		return /* html */`
 			<style>
 				f-link {
+					font-size: 2rem;
 					text-transform: capitalize;
 				}
 

@@ -1,10 +1,11 @@
 import { makeComponent, useComponent } from "../fn_web_components/api";
-import { row } from "./containers";
+import { row, column } from "./containers";
 import { spacer } from "./spacer";
 import { title } from "./title";
 
 useComponent("f-row-container", row);
 useComponent("f-spacer", spacer);
+useComponent("f-column", column);
 useComponent("f-title", title);
 
 export const header = makeComponent({
@@ -12,21 +13,22 @@ export const header = makeComponent({
 		<style>
 			header {
 				background-color: tomato;
-				height: 4rem;
+			}
+			f-title {
+				font-size: 2rem;
+				transform: translate(-25vw, -3rem);
 			}
 		</style>
+		<f-spacer vertical="8"></f-spacer>
 		<header>
-			<f-row-container>
-				<f-spacer horizontal="4" vertical="1">
-					<f-title priority="1">
-						<slot name="title"/>
-					</f-title>
-				</f-spacer>
-				<f-spacer horizontal="4" vertical="1">
+			<f-column>
+				<f-title priority="1">
+					<slot name="title"/>
+				</f-title>
+				<f-spacer horizontal="2" vertical="3">
 					<slot name="navigation"/>
 				</f-spacer>
-			</f-row-container>
+			</f-column>
 		</header>
 	`,
-	defaultProps: {},
 });

@@ -1,5 +1,4 @@
 import { makeComponent } from "../fn_web_components/api";
-import { intPropParser } from "./utils";
 
 export type SpacerProps = {
 	horizontal: number;
@@ -13,7 +12,9 @@ export const spacer = makeComponent<SpacerProps>({
 				padding: ${vertical}rem ${horizontal}rem;
 			}
 		</style>
-		<div><slot/></div>
+		<div>
+			<slot/>
+		</div>
 	`,
 	defaultProps: {
 		horizontal: 0,

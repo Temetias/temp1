@@ -11,6 +11,7 @@ const containerRenderFunction = (orientation: "row" | "column") => ({ spacing }:
 	<style>
 		div {
 			display: flex;
+			flex-direction: ${orientation};
 			justify-content: space-between;
 			align-items: center;
 		}
@@ -23,21 +24,21 @@ const containerRenderFunction = (orientation: "row" | "column") => ({ spacing }:
 			margin: 0;
 		}
 	</style>
-	<div><slot/></div>
+	<div>
+		<slot/>
+	</div>
 `;
 
-const containerProps = {
-	defaultProps: {
-		spacing: 0,
-	},
+const defaultProps = {
+	spacing: 0,
 };
 
 export const row = makeComponent<RowProps>({
 	initialRender: containerRenderFunction("row"),
-	...containerProps,
+	defaultProps,
 });
 
 export const column = makeComponent<ColumnProps>({
 	initialRender: containerRenderFunction("column"),
-	...containerProps,
+	defaultProps,
 });

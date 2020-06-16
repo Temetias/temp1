@@ -1,14 +1,16 @@
-import { useComponents, useComponent } from "./fn_web_components/api";
+import { useComponents } from "./fn_web_components/api";
 import { baseTheme } from "./components/basetheme";
 import { decorativeCursor } from "./components/decorativecursor";
 import { spacer } from "./components/spacer";
-import { testComponent } from "./testComp";
+import { title } from "./components/title";
+import { paragraph } from "./components/paragraph";
 
 (() => {
 	useComponents(
 		["f-base-theme", baseTheme],
 		["f-decorative-cursor", decorativeCursor],
 		["f-spacer", spacer],
+		["f-title", title],
+		["f-paragraph", paragraph],
 	);
-	useComponent("f2-test-button", testComponent);
 })();

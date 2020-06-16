@@ -14,12 +14,23 @@ type Component<P extends ComponentProps> = P & {
 	nativeApi: HTMLElement,
 };
 
-export interface ComponentDeclaration<P extends ComponentProps> {
+interface ComponentDeclarationWithProps<P extends ComponentProps> {
 	defaultProps: P,
 	initialRender: (props: P) => string,
 	connectedCallback?: (context: Component<P>) => void,
 	disconnectedCallback?: (context: Component<P>) => void,
 };
+
+interface ComponentDeclarationPropless {
+	initialRender: () => string,
+	connectedCallback?: (context: Component<{}>) => void,
+	disconnectedCallback?: (context: Component<{}>) => void,
+}
+
+type ComponentDeclaration<P extends ComponentProps> =
+	{} extends P
+		? ComponentDeclarationPropless
+		: ComponentDeclarationWithProps<P>;
 
 const convertInstanceToContext = <T extends HTMLElement, P extends ComponentProps>(instance: T & P, propKeys: (keyof P)[]): Component<P> => {
 	return {
@@ -40,33 +51,50 @@ const extractProps = <P extends ComponentProps>(extractee: HTMLElement, defaultP
 	return Object.keys(defaultProps).reduce(
 		(acc, cur) => ({
 			...acc,
-			[cur]: defaultProps[cur].constructor(extractee.getAttribute(cur) || defaultProps[cur]),
+			[cur]: defaultProps[cur].constructor(
+				typeof defaultProps[cur] === "boolean" && extractee.getAttribute(cur) === ""
+					? true
+					: extractee.getAttribute(cur) || defaultProps[cur]
+			),
 		}),
 		{} as P,
 	);
 };
 
-export const makeComponent = <P extends ComponentProps>(declaration: ComponentDeclaration<P>) => {
+export const makeComponent = <P extends ComponentProps = {}>(declaration: ComponentDeclaration<P>) => {
 	return class extends HTMLElement {
 		constructor() {
 			super();
 			this.attachShadow({ mode: "open" });
-			const props = extractProps(this, declaration.defaultProps);
-			this.shadowRoot?.appendChild(cloneNodeDeep(createElement(declaration.initialRender(props))));
-			Object.keys(declaration.defaultProps).forEach(k => {
-				Object.defineProperty(this, k, { set: () => { console.log("asdf") } });
-			});
 		}
 		connectedCallback() {
-			declaration.connectedCallback?.(convertInstanceToContext(this as any as HTMLElement & P, Object.keys(declaration.defaultProps)));
+			const props = extractProps(this, (<ComponentDeclarationWithProps<P>>declaration).defaultProps || {});
+			if ((<ComponentDeclarationWithProps<P>>declaration).defaultProps) {
+				Object.keys(props).forEach(k => {
+					this.setAttribute(k, `${props[k]}`);
+					Object.defineProperty(this, k, { value: props[k], writable: true });
+				});
+			}
+			this.shadowRoot?.appendChild(cloneNodeDeep(createElement(declaration.initialRender(props))));
+			declaration.connectedCallback?.(
+				convertInstanceToContext(
+					this as any as HTMLElement & P,
+					Object.keys((<ComponentDeclarationWithProps<P>>declaration).defaultProps) || [],
+				),
+			);
 		}
 		disconnectedCallback() {
-			declaration.disconnectedCallback?.(convertInstanceToContext(this as any as HTMLElement & P, Object.keys(declaration.defaultProps)));
+			declaration.disconnectedCallback?.(
+				convertInstanceToContext(
+					this as any as HTMLElement & P,
+					Object.keys((<ComponentDeclarationWithProps<P>>declaration).defaultProps) || [],
+				),
+			);
 		}
 		static get observedAttributes() {
-			return Object.keys(declaration.defaultProps);
+			return Object.keys((<ComponentDeclarationWithProps<P>>declaration).defaultProps || []);
 		}
-		attributeChangedCallback<K extends keyof P>(attrName: K, newVal: P[K], oldVal: P[K]) {
+		attributeChangedCallback<K extends keyof P>(attrName: K, newVal: P[K], _: P[K]) {
 			(this as any as P)[attrName] = newVal;
 		}
 	};
