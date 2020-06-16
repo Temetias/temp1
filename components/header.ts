@@ -8,10 +8,11 @@ useComponent("f-spacer", spacer);
 useComponent("f-title", title);
 
 export const header = makeComponent({
-	renderFunction: () => /* html */`
+	initialRender: () => /* html */`
 		<style>
 			header {
 				background-color: tomato;
+				height: 4rem;
 			}
 		</style>
 		<header>
@@ -27,4 +28,5 @@ export const header = makeComponent({
 			</f-row-container>
 		</header>
 	`,
+	defaultProps: {},
 });

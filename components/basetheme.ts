@@ -12,7 +12,7 @@ useComponents(
 );
 
 export const baseTheme = makeComponent({
-	renderFunction: () => /* html */`
+	initialRender: () => /* html */`
 		<style>
 
 		</style>
@@ -28,4 +28,5 @@ export const baseTheme = makeComponent({
 			<slot/>
 		</f-spacer>
 	`,
+	defaultProps: {}
 });

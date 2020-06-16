@@ -7,11 +7,7 @@ export type SpacerProps = {
 };
 
 export const spacer = makeComponent<SpacerProps>({
-	propParsers: {
-		horizontal: intPropParser,
-		vertical: intPropParser,
-	},
-	renderFunction: ({ horizontal, vertical }) => /* html */`
+	initialRender: ({ horizontal, vertical }) => /* html */`
 		<style>
 			div {
 				padding: ${vertical}rem ${horizontal}rem;
@@ -19,4 +15,8 @@ export const spacer = makeComponent<SpacerProps>({
 		</style>
 		<div><slot/></div>
 	`,
+	defaultProps: {
+		horizontal: 0,
+		vertical: 0,
+	},
 });

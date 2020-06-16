@@ -1,30 +1,28 @@
-import { makeComponent } from "./fn_web_components/api2";
+import { makeComponent } from "./fn_web_components/api";
 
 type TestProps = {
 	toggled: boolean;
 };
 
-function testFn() {
-	console.log(this, "hello");
-}
-
 export const testComponent = makeComponent<TestProps>({
-	render: ({ toggled }) => /* html */`
+	initialRender: ({ toggled }) => /* html */`
 		<style>
 			.toggled {
 				color: red;
 			}
 		</style>
-		<button class="${toggled ? "toggled" : "" }" onclick="${testFn}">
-			Test Button
+		<button class="${toggled ? "toggled" : ""}">
+			<slot/>
 		</button>
 	`,
-	attributeChangedCallbacks: {
-		toggled: (newVal, oldVal, context) => {
-			context.shadowRoot?.querySelector("button")?.setAttribute("class", newVal ? "toggled" : "");
-		},
-	},
-	props: {
+	defaultProps: {
 		toggled: false,
-	}
+	},
+	connectedCallback(ctx) {
+		const btn = ctx.shadowQuerySelector("button")!;
+		btn.onclick = () => {
+			ctx.toggled = !ctx.toggled
+			btn.setAttribute("class", ctx.toggled ? "toggled" : "");
+		};
+	},
 });

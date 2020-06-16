@@ -1,18 +1,17 @@
 import { makeComponent } from "../fn_web_components/api";
-import { booleanPropParser, stringPropParser, declarationParser } from "./utils";
 import { prefixWith } from "../fns/index";
 
 type TitleProps = {
 	link: boolean;
-	priority: string;
+	priority: number;
 	inline: boolean;
 };
 
 const hTag = prefixWith("h");
 
 export const title = makeComponent<TitleProps>({
-	renderFunction: ({ priority, link, inline }) => {
-		const tag = hTag(priority);
+	initialRender: ({ priority, link, inline }) => {
+		const tag = hTag(priority.toString());
 		return /* html */`
 			<style>
 				${tag} {
@@ -31,9 +30,9 @@ export const title = makeComponent<TitleProps>({
 			</${tag}>
 		`;
 	},
-	propParsers: {
-		link: booleanPropParser,
-		priority: stringPropParser,
-		inline: declarationParser,
+	defaultProps: {
+		link: false,
+		priority: 1,
+		inline: false,
 	}
 });

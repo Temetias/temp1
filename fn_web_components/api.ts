@@ -1,92 +1,92 @@
 import { cloneNodeDeep, mapToHtmlString } from "../fns/index";
 
-export type RenderFunction<T extends object> = (props: T) => string;
+type Primitive = number | boolean | string;
 
-export type ComponentDeclarationWithProps<T extends object> = {
-	renderFunction: RenderFunction<T>;
-	propParsers: PropertyParsers<T>;
+type ComponentProps = Record<string, Primitive>;
+
+type AttributeSetter = (name: string, value: Primitive) => void;
+
+type ShadowQuerySelector = (selector: string) => null | HTMLElement;
+
+type Component<P extends ComponentProps> = P & {
+	shadowQuerySelector: ShadowQuerySelector,
+	setAttribute: AttributeSetter,
+	nativeApi: HTMLElement,
 };
 
-export type ComponentDeclarationPropless = {
-	renderFunction: RenderFunction<{}>;
+export interface ComponentDeclaration<P extends ComponentProps> {
+	defaultProps: P,
+	initialRender: (props: P) => string,
+	connectedCallback?: (context: Component<P>) => void,
+	disconnectedCallback?: (context: Component<P>) => void,
 };
 
-export type ComponentDeclaration<T extends object> = {} extends T
-	? ComponentDeclarationPropless
-	: ComponentDeclarationWithProps<T>;
-
-export type PropertyParsers<T> = {
-	[K in keyof T]: (val: string | null) => T[K];
+const convertInstanceToContext = <T extends HTMLElement, P extends ComponentProps>(instance: T & P, propKeys: (keyof P)[]): Component<P> => {
+	return {
+		...propKeys.reduce((acc, cur) => ({ ...acc, [cur]: instance[cur] }), {} as P),
+		nativeApi: instance,
+		shadowQuerySelector: (selector: string) => instance.shadowRoot!.querySelector(selector),
+		setAttribute: (name: string, value: Primitive) => instance.setAttribute(name, `${value}`),
+	};
 };
 
-const createElement = <T extends object>(render: ReturnType<RenderFunction<T>>) => {
+const createElement = <P extends ComponentProps>(render: ReturnType<ComponentDeclaration<P>["initialRender"]>) => {
 	const template = document.createElement("template");
 	template.innerHTML = render;
 	return template.content;
 };
 
-const declarationHasProps = <T extends object>(declaration: ComponentDeclarationWithProps<T> | ComponentDeclarationPropless): declaration is ComponentDeclarationWithProps<T> => {
-	return !!(declaration as ComponentDeclarationWithProps<T>).propParsers;
+const extractProps = <P extends ComponentProps>(extractee: HTMLElement, defaultProps: P) => {
+	return Object.keys(defaultProps).reduce(
+		(acc, cur) => ({
+			...acc,
+			[cur]: defaultProps[cur].constructor(extractee.getAttribute(cur) || defaultProps[cur]),
+		}),
+		{} as P,
+	);
 };
 
-const extractProps = <T extends object>(extractee: HTMLElement, declaration: ComponentDeclaration<T>) => {
-	return declarationHasProps(declaration as ComponentDeclarationPropless)
-		? Object.keys((declaration as ComponentDeclarationWithProps<T>).propParsers).reduce(
-			(acc, cur) => ({ ...acc, [cur]: (declaration as ComponentDeclarationWithProps<T>).propParsers[cur as keyof T](extractee.getAttribute(cur)) }),
-			{},
-		) as T
-		: {} as T;
-}
-
-export const makeComponent = <T extends object = {}>(declaration: ComponentDeclaration<T>) => (templateTag: string) => {
-	return {[templateTag]: class extends HTMLElement {
-		private props: T;
-		public constructor() {
+export const makeComponent = <P extends ComponentProps>(declaration: ComponentDeclaration<P>) => {
+	return class extends HTMLElement {
+		constructor() {
 			super();
-			this.props = extractProps(this, declaration);
-			this.attachShadow({ mode: process.env.NODE_ENV === "development" ? "open" : "closed" });
-			this.shadowRoot?.appendChild(cloneNodeDeep(createElement(declaration.renderFunction(this.props))));
-			Object.keys(this.props).forEach(k => {
-				Object.defineProperty(this, k, {
-					set: (v: T[keyof T]) => {
-						console.log(v);
-						/* [].forEach.call(this.shadowRoot?.querySelectorAll(`[${k}]`), el => {
-
-						}); */
-					},
-				});
+			this.attachShadow({ mode: "open" });
+			const props = extractProps(this, declaration.defaultProps);
+			this.shadowRoot?.appendChild(cloneNodeDeep(createElement(declaration.initialRender(props))));
+			Object.keys(declaration.defaultProps).forEach(k => {
+				Object.defineProperty(this, k, { set: () => { console.log("asdf") } });
 			});
 		}
-		protected static get observedAttributes() {
-			return declarationHasProps(declaration as ComponentDeclarationPropless)
-				? Object.keys((declaration as ComponentDeclarationWithProps<T>).propParsers)
-				: [];
+		connectedCallback() {
+			declaration.connectedCallback?.(convertInstanceToContext(this as any as HTMLElement & P, Object.keys(declaration.defaultProps)));
 		}
-		protected attributeChangedCallback<T>(attrName: keyof T, oldValue: T, newValue: T) {
-			if (oldValue === newValue)
-				return;
-			else
-				(this as any as Record<keyof T, any>)[attrName] = newValue;
+		disconnectedCallback() {
+			declaration.disconnectedCallback?.(convertInstanceToContext(this as any as HTMLElement & P, Object.keys(declaration.defaultProps)));
 		}
-	}}[templateTag];
-};
-
-const componentUseCache = () => {
-	const cache: Record<string, boolean> = {};
-	return (templateTag: string, componentFactory: (templateTag: string) => CustomElementConstructor) => {
-		if (cache[templateTag])
-			return;
-		else {
-			cache[templateTag] = true;
-			window.customElements.define(templateTag, componentFactory(templateTag));
+		static get observedAttributes() {
+			return Object.keys(declaration.defaultProps);
+		}
+		attributeChangedCallback<K extends keyof P>(attrName: K, newVal: P[K], oldVal: P[K]) {
+			(this as any as P)[attrName] = newVal;
 		}
 	};
 };
 
-export const useComponent = componentUseCache();
+const initializeComponentUsageCache = () => {
+	const cache: Record<string, boolean> = {};
+	return (templateTag: string, componentInstance: ReturnType<typeof makeComponent>) => {
+		if (cache[templateTag]) return;
+		else {
+			cache[templateTag] = true;
+			window.customElements.define(templateTag, componentInstance);
+		}
+	};
+};
 
-export const useComponents = (...components: [string, (templateTag: string) => CustomElementConstructor][]) => {
-	components.forEach(([ templateTag, componentConstructor ]) => useComponent(templateTag, componentConstructor));
+export const useComponent = initializeComponentUsageCache();
+
+export const useComponents = (...components: [ string, ReturnType<typeof makeComponent> ][]) => {
+	components.forEach(([tag, instance]) => useComponent(tag, instance));
 };
 
 export const componentMap = mapToHtmlString;

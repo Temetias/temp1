@@ -1,11 +1,11 @@
-import { makeComponent,componentMap, useComponents } from "../fn_web_components/api";
+import { makeComponent, componentMap, useComponents } from "../fn_web_components/api";
 import { stringArrPropParser } from "./utils";
 import { link } from "./link";
 import { prefixWith, is, compose2 } from "../fns/index";
 import { spacer } from "./spacer";
 
 type NavigationProps = {
-	paths: string[];
+	paths: string;
 };
 
 useComponents(
@@ -24,7 +24,7 @@ const linkItemMapper = (isCurrentPath: (path: string) => boolean) => componentMa
 `);
 
 export const navigation = makeComponent<NavigationProps>({
-	renderFunction: ({ paths }) => {
+	initialRender: ({ paths }) => {
 		const isCurrentPath = compose2(is(window.location.pathname), prefixSlash);
 		return /* html */`
 			<style>
@@ -41,11 +41,11 @@ export const navigation = makeComponent<NavigationProps>({
 				}
 			</style>
 			<nav>
-				${linkItemMapper(isCurrentPath)(paths)}
+				${linkItemMapper(isCurrentPath)(stringArrPropParser(paths))}
 			</nav>
 		`;
 	},
-	propParsers: {
-		paths: stringArrPropParser,
+	defaultProps: {
+		paths: "[]",
 	},
 });

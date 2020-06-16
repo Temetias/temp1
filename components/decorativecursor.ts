@@ -1,7 +1,7 @@
 import { makeComponent } from "../fn_web_components/api";
 
 export const decorativeCursor = makeComponent({
-	renderFunction: () => /* html */`
+	initialRender: () => /* html */`
 		<style>
 			:host:after {
 				display: inline;
@@ -17,4 +17,5 @@ export const decorativeCursor = makeComponent({
 		</style>
 		<slot class="decorative-cursor"/>
 	`,
+	defaultProps: {},
 });

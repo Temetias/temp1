@@ -1,5 +1,4 @@
 import { makeComponent } from "../fn_web_components/api";
-import { intPropParser } from "./utils";
 
 type ContainerProps = {
 	spacing: number;
@@ -27,18 +26,18 @@ const containerRenderFunction = (orientation: "row" | "column") => ({ spacing }:
 	<div><slot/></div>
 `;
 
-const containerPropsParsers = {
-	propParsers: {
-		spacing: intPropParser,
+const containerProps = {
+	defaultProps: {
+		spacing: 0,
 	},
 };
 
 export const row = makeComponent<RowProps>({
-	renderFunction: containerRenderFunction("row"),
-	...containerPropsParsers,
+	initialRender: containerRenderFunction("row"),
+	...containerProps,
 });
 
 export const column = makeComponent<ColumnProps>({
-	renderFunction: containerRenderFunction("column"),
-	...containerPropsParsers,
+	initialRender: containerRenderFunction("column"),
+	...containerProps,
 });
